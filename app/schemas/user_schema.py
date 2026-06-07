@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field, EmailStr
 from enum import Enum
 
@@ -11,6 +12,12 @@ class UserCreate(BaseModel):
     email: EmailStr
     role: RoleEnum
     is_active: bool = True
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=3)
+    email: Optional[EmailStr] = None
+    role: Optional[RoleEnum] = None
+    is_active: Optional[bool] = None
 
 class UserResponse(BaseModel):
     id: int
