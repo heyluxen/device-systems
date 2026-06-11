@@ -262,6 +262,7 @@ Se envió una petición DELETE a http://localhost:8000/api/v1/users/1 intentando
 
 Código HTTP: 404 Not Found
 
+---
 ##  Tabla de endpoints (CRUD completo)
 
 | Método | Ruta | Descripción | Códigos de estado |
@@ -272,3 +273,182 @@ Código HTTP: 404 Not Found
 | PUT | `/api/v1/users/{user_id}` | Actualizar completamente un usuario (todos los campos) | 200 OK, 404 Not Found, 400 Bad Request |
 | PATCH | `/api/v1/users/{user_id}` | Actualizar parcialmente un usuario (solo campos enviados) | 200 OK, 404 Not Found, 400 Bad Request (body vacío) |
 | DELETE | `/api/v1/users/{user_id}` | Eliminar un usuario | 204 No Content, 404 Not Found |
+
+---
+# GA1-220501096-01-AA1-EV09 – FastAPI con SQLAlchemy: Persistencia de Datos y CRUD sobre Base de Datos en device_systems
+
+En esta actividad evolucioné la API device_systems para que los usuarios ya no se guarden en la memoria del servidor (como en la actividad 8), sino en una base de datos real SQLite usando SQLAlchemy. Ahora, si apago y vuelvo a prender el servidor, los usuarios siguen ahí. También aprendí a separar los modelos de base de datos (SQLAlchemy) de los esquemas de validación (Pydantic), y a usar la inyección de dependencias con Depends(get_db) para manejar las sesiones de forma limpia. Al final, la API quedó más robusta, con persistencia real y preparada para crecer.
+
+## Estructura del proyecto
+
+![](images/estructura9.png)
+
+## Base de datos generada
+
+La API usa SQLite como motor de base de datos. Al ejecutar el servidor por primera vez, se crea automáticamente el archivo device_systems.db en la raíz del proyecto.
+
+![](images/basededatos.png)
+
+## Documentación Automática Swagger UI
+
+![](images/documentacion9.png)
+
+
+# Configuración de base de datos con SQLAlchemy
+Archivo app/database/connection.py – Configura el motor y la sesión:
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+DATABASE_URL = "sqlite:///./device_systems.db"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+def create_tables():
+    Base.metadata.create_all(bind=engine)
+```
+
+Modelo User (app/models/user_model.py):
+
+```python
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    role = Column(String(20), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+```
+Inyección de dependencia (app/dependencies/database_dependency.py):
+
+```python
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+Cada endpoint recibe la sesión mediante Depends(get_db).
+```
+
+---
+# Tabla de endpoints (CRUD completo)
+
+| Método | Ruta | Descripción | Códigos de estado |
+|--------|------|-------------|-------------------|
+| GET | `/api/v1/users` | Listar todos (con filtros opcionales `?role`, `?is_active`) | 200 OK |
+| GET | `/api/v1/users/{id}` | Obtener usuario por ID | 200 OK, 404 Not Found |
+| POST | `/api/v1/users` | Crear usuario | 201 Created, 400 Bad Request (email duplicado), 422 Unprocessable Entity |
+| PUT | `/api/v1/users/{id}` | Actualizar completamente | 200 OK, 404 Not Found, 400 Bad Request |
+| PATCH | `/api/v1/users/{id}` | Actualizar parcialmente | 200 OK, 404 Not Found, 400 Bad Request (body vacío) |
+| DELETE | `/api/v1/users/{id}` | Eliminar usuario | 204 No Content, 404 Not Found |
+
+---
+
+# Evidencias de pruebas por endpoint
+
+## Pruebas exitosas
+
+### POST – Crear usuario válido (201)
+![](images/captura21.png)
+
+### GET – Listar todos los usuarios (200)
+![](images/captura23.png)
+
+### GET – Usuario por ID existente (200)
+![](images/captura24.png)
+
+### PUT – Actualizar completo (200)
+![](images/captura28.png)
+
+### PATCH – Actualizar parcial (cambiar rol) (200)
+![](images/captura29.png)
+
+### DELETE – Eliminar usuario existente (204)
+![](images/captura30.png)
+
+### GET – Filtrar por rol (?role=admin) (200)
+![](images/captura26.png)
+
+### GET – Filtrar por activos (?is_active=true) (200)
+![](images/captura27.png)
+
+
+## Manejo de errores
+
+### POST – Email duplicado	400 Bad Request
+![](images/captura22ERROR.png)
+
+### POST – Nombre muy corto (validación)	422 Unprocessable Entity
+![](images/captura32ERROR.png)
+
+### POST – Rol no permitido	422 Unprocessable Entity
+![](images/captura33ERROR.png)
+
+### GET – ID inexistente	404 Not Found
+![](images/captura25ERROR.png)
+
+### PATCH – Usuario no encontrado	404 Not Found
+![](images/captura34ERROR.png)
+
+
+
+### DELETE – Usuario inexistente	404 Not Found
+![](images/captura35ERROR.png)
+
+### GET – Validar que ya no existe (después de DELETE)	404 Not Found
+![](images/captura31ERROR.png)
+
+
+## Manejo de errores y códigos de estado
+
+La API utiliza códigos HTTP estándar para comunicar el resultado de cada operación:
+
+| Código | Significado | Cuándo ocurre |
+|--------|-------------|----------------|
+| 200 OK | Éxito | GET, PUT, PATCH exitosos |
+| 201 Created | Recurso creado | POST /users válido |
+| 204 No Content | Eliminación exitosa | DELETE /users/{id} (sin cuerpo) |
+| 400 Bad Request | Error del cliente | Email duplicado, PATCH sin campos |
+| 404 Not Found | Recurso no existe | GET/PUT/PATCH/DELETE con ID inexistente |
+| 422 Unprocessable Entity | Validación fallida | Nombre corto, rol inválido, email mal formado |
+
+---
+## Dependency Injection con SQLAlchemy
+Se implementó una dependencia reutilizable para la sesión de base de datos:
+
+```python
+# app/dependencies/database_dependency.py
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+Esta dependencia se inyecta en los endpoints usando Depends(get_db), garantizando que cada petición HTTP tenga su propia sesión y que se cierre automáticamente al finalizar.
+
+Ejemplo en ruta:
+
+```python
+@router.get("/users/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return user_service.get_user_or_404(db, user_id)
+```
+---
+# Reflexión final sobre la evolución del proyecto
+
+Al inicio, device_systems guardaba los usuarios en una simple lista en memoria. Servía para aprender, pero tenía una gran limitación: al reiniciar el servidor, todos los datos desaparecían. No era una API útil en el mundo real.
+
+La evolución más importante fue incorporar persistencia real con SQLAlchemy y SQLite. Ahora los usuarios se almacenan en una base de datos y sobreviven a los reinicios. Esto me hizo entender por qué las aplicaciones profesionales necesitan una base de datos.
+
+También aprendí a separar responsabilidades: los modelos SQLAlchemy definen cómo se guardan los datos (tipos, restricciones como nullable y unique), mientras que los esquemas Pydantic definen cómo se validan y se muestran en la API. Esta separación mantiene el código limpio y seguro.
+
+Otro avance fue usar inyección de dependencias con Depends(get_db). Cada petición HTTP recibe su propia sesión de base de datos y se cierra automáticamente. Esto evita errores de conexión y hace el código más reutilizable.
+
+El manejo de errores también mejoró: ahora la API responde con códigos HTTP claros (200, 201, 204, 400, 404, 422) y mensajes descriptivos. El cliente siempre sabe qué pasó: si el email está duplicado, si el ID no existe o si los datos no son válidos.
