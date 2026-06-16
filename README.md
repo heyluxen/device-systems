@@ -276,7 +276,9 @@ Código HTTP: 404 Not Found
 
 ---
 # GA1-220501096-01-AA1-EV09 – FastAPI con SQLAlchemy: Persistencia de Datos y CRUD sobre Base de Datos en device_systems
+
 **Link video de YouTube:** https://youtu.be/OV3HhpEqdlk
+
 En esta actividad evolucioné la API device_systems para que los usuarios ya no se guarden en la memoria del servidor (como en la actividad 8), sino en una base de datos real SQLite usando SQLAlchemy. Ahora, si apago y vuelvo a prender el servidor, los usuarios siguen ahí. También aprendí a separar los modelos de base de datos (SQLAlchemy) de los esquemas de validación (Pydantic), y a usar la inyección de dependencias con Depends(get_db) para manejar las sesiones de forma limpia. Al final, la API quedó más robusta, con persistencia real y preparada para crecer.
 
 ## Estructura del proyecto
