@@ -113,7 +113,7 @@ El único problema fue acordarme de instalar email-validator y de poner las ruta
 En general, FastAPI es ideal para hacer APIs rápidas, limpias y con buen rendimiento. Lo recomiendo para proyectos pequeños y grandes.
 
 # GA1-220501096-01-AA1-EV08 – FastAPI Intermedio: Evolución de device_systems con CRUD Completo, Manejo de Errores, Swagger/OpenAPI y Dependency Injection
-
+**Link video de YouTube:** https://youtu.be/0-p2MIG4v4M
 # Introducción
 
 En esta actividad evolucioné la API device_systems que había construido en la actividad anterior. Partí del proyecto base que ya tenía endpoints GET y POST, y lo convertí en una API REST completa con operaciones de actualización y eliminación.
