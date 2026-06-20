@@ -1,14 +1,13 @@
 from fastapi import FastAPI
-from app.routes import user_routes
 from app.database.connection import create_tables
+from app.routes import user_routes, device_routes, loan_routes
 
-# Crear tablas al iniciar la aplicación
 create_tables()
 
 app = FastAPI(
     title="device_systems API",
-    description="API REST para gestión de usuarios con persistencia SQLAlchemy",
-    version="3.0.0",
+    description="API con usuarios, dispositivos y préstamos (relaciones y migraciones)",
+    version="4.0.0",
     contact={"name": "Tu Nombre", "email": "tuemail@ejemplo.com"},
     license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
     docs_url="/docs",
@@ -16,7 +15,9 @@ app = FastAPI(
 )
 
 app.include_router(user_routes.router, prefix="/api/v1", tags=["Users"])
+app.include_router(device_routes.router, prefix="/api/v1", tags=["Devices"])
+app.include_router(loan_routes.router, prefix="/api/v1", tags=["Loans"])
 
 @app.get("/")
 def root():
-    return {"message": "Bienvenido a device_systems API con SQLAlchemy"}
+    return {"message": "Bienvenido a device_systems API con relaciones y Alembic"}

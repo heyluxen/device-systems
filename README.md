@@ -454,3 +454,184 @@ También aprendí a separar responsabilidades: los modelos SQLAlchemy definen c�
 Otro avance fue usar inyección de dependencias con Depends(get_db). Cada petición HTTP recibe su propia sesión de base de datos y se cierra automáticamente. Esto evita errores de conexión y hace el código más reutilizable.
 
 El manejo de errores también mejoró: ahora la API responde con códigos HTTP claros (200, 201, 204, 400, 404, 422) y mensajes descriptivos. El cliente siempre sabe qué pasó: si el email está duplicado, si el ID no existe o si los datos no son válidos.
+
+# [Proyecto-Final-v1] GA1-220501096-01-AA1-EV10 – FastAPI Avanzado: Migraciones con Alembic, Asociaciones de Modelos y Consultas con Joins en device_systems
+
+API REST para gestión de usuarios, dispositivos y préstamos con relaciones entre modelos, migraciones controladas con Alembic y consultas avanzadas con joins.
+
+## Tecnologías utilizadas
+
+- FastAPI
+- SQLAlchemy (ORM)
+- Alembic (migraciones)
+- SQLite
+- Pydantic
+- Uvicorn
+
+## Estructura del proyecto
+
+![](images/estructura1.png)
+
+![](images/estructura2.png)
+
+## Configuración de Alembic
+
+### 1. Instalación de Alembic
+
+![](images/instalacionAlembic.png)
+
+### 2. Inicializar Alembic
+
+![](images/ejecucionAlembic.png)
+
+Ejecución del comando alembic init alembic que crea la estructura inicial de migraciones.
+
+### 3. Generar migración automática
+
+![](images/alembicRevision.png)
+
+Generación de la migración que detecta automáticamente los nuevos modelos Device y Loan.
+
+### 4. Aplicar migración a la base de datos
+
+![](images/migracionAlembic.png)
+
+Aplicación de la migración a la base de datos, creando las tablas devices, loans y actualizando alembic_version.
+
+### 5. Ver historial de migraciones
+
+![](images/alembicHistorial.png)
+
+Listado de todas las migraciones aplicadas, mostrando la revisión actual y el historial completo.
+
+## Estructura de la base de datos (tablas generadas)
+
+![](images/estructuraTablas.png)
+
+Vista de las tablas creadas en la base de datos: users (existente), devices, loans y alembic_version (control de migraciones).
+
+## Documentación Swagger UI
+
+![](images/documentacion1.png)
+
+![](images/documentacion2.0.png)
+
+![](images/documentacion3.png)
+
+Documentación interactiva generada por FastAPI, organizada por tags: Users, Devices y Loans. Muestra los esquemas de entrada y salida, y permite probar los endpoints directamente.
+
+# Evidencias de pruebas funcionales
+
+## Creación de usuario, dispositivos y préstamos
+
+### Creación de usuario
+
+![](images/creacionUsuario1.png)
+
+![](images/creacionUsuario2.png)
+
+### Crear dispositivo válido
+
+![](images/creardispositivo1.png)
+
+![](images/creardispositivo2.png)
+
+Envío de datos correctos a POST /devices. Respuesta 201 Created con el dispositivo creado y su ID asignado.
+
+### Creación de un prestamo exitoso
+
+![](images/crearprestamo1.png)
+
+![](images/crearprestamo2.png)
+
+Asignación de un dispositivo disponible a un usuario. Respuesta 201 Created con el préstamo activo.
+
+### Prestar dispositivo no disponible
+
+![](images/prestarnodisponible1.png)
+
+![](images/prestarnodisponible2.png)
+
+Intento de prestar un dispositivo ya prestado. La API responde con 409 Conflict y el mensaje "Dispositivo no disponible".
+
+### Devolver dispositivo
+
+![](images/devolverDispositivo1.png)
+
+![](images/devolverDispositivo2.png)
+
+Devolución de un préstamo activo. La API actualiza el estado a "returned", asigna fecha de devolución y libera el dispositivo. Respuesta 200 OK.
+
+## Consultas con joins y filtros
+
+### GET /loans/details (sin filtros)
+
+![](images/getloan.png)
+
+Consulta de todos los préstamos con información relacionada del usuario y del dispositivo. Respuesta 200 OK con datos enriquecidos.
+
+### Filtrar por status=active
+
+![](images/filtrarPrestamo1.png)
+
+![](images/filtrarPrestamo2.png)
+
+Filtro por estado activo. La API devuelve solo los préstamos con status = "active".
+
+### Filtrar por device_type=tablet
+
+![](images/filtrarPorDispositivo1.png)
+
+![](images/filtrarPorDispositivo2.png)
+
+Filtro por tipo de dispositivo. La consulta usa join con la tabla devices para devolver solo préstamos de tablets.
+
+### Préstamos de un usuario específico
+
+![](images/prestamoUsuario1.png)
+
+![](images/prestamoUsuario2.png)
+
+### Consultar préstamo (con filtros)
+
+![](images/consultarPrestamo1.png)
+
+![](images/consultarPrestamo2.png)
+
+### Historial de préstamos de un dispositivo
+
+![](images/historialDispositivo1.png)
+
+![](images/historialDispositivo2.png)
+
+Consulta de todos los préstamos registrados para un dispositivo específico. Útil para saber el historial de uso del equipo.
+
+## Manejo de errores y códigos de estado
+
+| Código | Significado | Cuándo ocurre |
+|--------|-------------|----------------|
+| 201 Created | Recurso creado | POST /devices, POST /loans |
+| 200 OK | Éxito | GET, PUT, PATCH exitosos |
+| 204 No Content | Eliminación exitosa | DELETE /devices/{id} |
+| 400 Bad Request | Error de cliente | Serial duplicado, datos inválidos |
+| 404 Not Found | Recurso no existe | Dispositivo, usuario o préstamo no encontrado |
+| 409 Conflict | Conflicto de regla de negocio | Dispositivo no disponible, préstamo ya devuelto |
+| 422 Unprocessable Entity | Validación fallida | Datos con formato incorrecto |
+
+## Reflexión sobre la importancia de migraciones, relaciones y consultas avanzadas
+
+**Sobre migraciones con Alembic:**
+
+Alembic me permitió versionar los cambios en la base de datos de forma controlada y profesional. Generar una migración automática con --autogenerate y aplicarla con upgrade head fue sencillo y seguro, evitando errores manuales al modificar la estructura de las tablas. Poder revertir cambios con downgrade y mantener un historial claro con alembic history da tranquilidad al trabajar en equipo y en entornos de producción, donde los cambios deben ser trazables y reversibles.
+
+**Sobre relaciones entre modelos:**
+
+Definir ForeignKey y relationship con back_populates permitió acceder a datos relacionados de forma natural y eficiente. Por ejemplo, desde un préstamo puedo obtener el usuario y el dispositivo sin escribir joins manuales ni consultas SQL complejas. Esto simplifica el código, lo hace más legible y reduce errores. Las relaciones también garantizan la integridad referencial: no se puede crear un préstamo sin un usuario o dispositivo existente, lo que protege la calidad de los datos.
+
+**Sobre consultas avanzadas con joins y filtros:**
+
+Implementar GET /loans/details con filtros dinámicos (status, user_email, device_type) mostró la potencia de SQLAlchemy para construir consultas flexibles y eficientes. La combinación de join(), filter() y ilike() permite búsquedas precisas combinando información de múltiples tablas en una sola consulta. Esto evita hacer múltiples peticiones a la base de datos y mejora el rendimiento de la API.
+
+**Conclusión general:**
+
+Esta actividad me enseñó a diseñar un sistema con múltiples tablas relacionadas, gestionar migraciones profesionales y construir endpoints que devuelven información enriquecida. La API device_systems ahora es más robusta, escalable y lista para un entorno real. Alembic, SQLAlchemy y FastAPI trabajan juntos para crear un backend sólido y mantenible.
