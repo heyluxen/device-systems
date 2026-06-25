@@ -460,6 +460,8 @@ El manejo de errores también mejoró: ahora la API responde con códigos HTTP c
 
 # [Proyecto-Final-v1] GA1-220501096-01-AA1-EV10 – FastAPI Avanzado: Migraciones con Alembic, Asociaciones de Modelos y Consultas con Joins en device_systems
 
+**Link video de Youtube:** https://youtu.be/W525i0fvi-Y
+
 API REST para gestión de usuarios, dispositivos y préstamos con relaciones entre modelos, migraciones controladas con Alembic y consultas avanzadas con joins.
 
 ## Tecnologías utilizadas
@@ -663,7 +665,7 @@ API REST segura para gestión de usuarios, dispositivos y préstamos con autenti
 
 ![](images/estructura12.png)
 
-## 🧪 Migración Alembic aplicada
+## Migración Alembic aplicada
 
 Se generó y aplicó una migración para agregar los campos de autenticación al modelo `User`.
 
