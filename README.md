@@ -6,8 +6,6 @@
 
 **Link video de Youtube:** https://youtu.be/fzrc7cCX3jo
 
-# GA1-220501096-01-AA1-EV07 – Fundamentos de FastAPI: API REST para Gestión de Usuarios
-
 ## Introducción
 
 En este trabajo hice una API REST llamada `device_systems` usando FastAPI. La API sirve para administrar usuarios: puedes crearlos, listarlos, buscarlos por ID, filtrarlos por rol o por si están activos o no.
