@@ -635,3 +635,162 @@ Implementar GET /loans/details con filtros dinámicos (status, user_email, devic
 **Conclusión general:**
 
 Esta actividad me enseñó a diseñar un sistema con múltiples tablas relacionadas, gestionar migraciones profesionales y construir endpoints que devuelven información enriquecida. La API device_systems ahora es más robusta, escalable y lista para un entorno real. Alembic, SQLAlchemy y FastAPI trabajan juntos para crear un backend sólido y mantenible.
+
+# [Proyecto-Final-v2] GA1-220501096-01-AA1-EV11 – FastAPI Seguridad: Autenticación, Middleware, CORS, Rate Limiting y Validación Avanzada en device_systems
+
+API REST segura para gestión de usuarios, dispositivos y préstamos con autenticación JWT, middleware, CORS, rate limiting y validaciones avanzadas con Pydantic v2.
+
+## Tecnologías utilizadas
+
+- FastAPI
+- SQLAlchemy
+- Alembic
+- Pydantic v2
+- Passlib (bcrypt)
+- Python-JOSE (JWT)
+- SlowAPI (rate limiting)
+- SQLite
+- Uvicorn
+
+## Estructura del proyecto
+
+![](images/estructura11.png)
+
+![](images/estructura12.png)
+
+## 🧪 Migración Alembic aplicada
+
+Se generó y aplicó una migración para agregar los campos de autenticación al modelo `User`.
+
+![](images/alembicRevision2.png)
+
+![](images/alembicHistory.png)
+
+## Pruebas de autenticacion
+
+### 1. Registro de usuario exitoso (201 Created)
+
+![](images/register.png)
+
+POST /auth/register con datos válidos. Respuesta 201 Created con el usuario creado.
+
+### 2. Registro con contraseña débil (422 Unprocessable Entity)
+
+![](images/contraseñaDebil.png)
+
+POST /auth/register con contraseña de menos de 8 caracteres. Respuesta 422 con detalle de validación.
+
+### 3. Registro con email duplicado (400 Bad Request)
+
+![](images/emailDuplicado11.png)
+
+POST /auth/register con un email ya registrado. Respuesta 400 Bad Request.
+
+### 4. Login correcto (200 OK con token)
+
+![](images/loginCorrecto.png)
+
+POST /auth/login con credenciales válidas. Respuesta 200 OK con access_token.
+
+### 5. Login con contraseña incorrecta (401 Unauthorized)
+
+![](images/contraseñaIncorrecta.png)
+
+POST /auth/login con contraseña incorrecta. Respuesta 401 Unauthorized.
+
+### 6. Consulta de /auth/me con token válido (200 OK)
+
+![](images/consultaAuthMe.png)
+
+GET /auth/me con token válido en el header Authorization. Respuesta 200 OK con los datos del usuario.
+
+### 7. Acceso a ruta protegida sin token (401 Unauthorized)
+
+![](images/accesoSinToken.png)
+
+GET /users sin token de autenticación. Respuesta 401 Unauthorized.
+
+### 8. Acceso con token inválido (401 Unauthorized)
+
+![](images/tokenInvalido.png)
+
+GET /auth/me con un token falso. Respuesta 401 Unauthorized.
+
+### 9. Acceso con usuario sin permisos (403 Forbidden)
+
+![](images/eliminacionRolNoPermitido.png)
+
+### 10. Login correcto (200 OK con token)
+
+![](images/loginCorrecto.png)
+
+###  Creación de dispositivo con rol admin (201 Created)
+
+![](images/creacionConRolPermitido.png)
+
+## Middleware y CORS
+
+### Cabeceras generadas por middleware
+
+![](images/middlewareHeaders.png)
+
+
+Todas las respuestas incluyen las cabeceras X-App-Name, X-Request-ID y X-Process-Time, generadas por el middleware personalizado.
+
+### Configuración CORS
+
+Se configuró CORS en app/main.py permitiendo los orígenes locales para desarrollo:
+
+![](images/cors.png)
+
+En producción no se recomienda usar allow_origins=["*"] con allow_credentials=True porque permitiría que cualquier dominio acceda a recursos con credenciales (cookies, tokens), lo cual es un riesgo de seguridad. Es mejor especificar los dominios autorizados.
+
+###  Rate limiting
+
+Activación de rate limiting (429 Too Many Requests)
+
+![](images/rateLimiting.png)
+
+# Documentación Swagger/OpenAPI con OAuth2
+
+![](images/swagger1.png)
+
+![](images/swagger2.png)
+
+![](images/swagger3.png)
+
+![](images/swagger4.png)
+
+Swagger UI (/docs) muestra correctamente:
+
+- Tags: Auth, Users, Devices, Loans
+
+- Endpoints protegidos con candado 🔒
+
+- Botón Authorize para autenticación OAuth2
+
+- Schemas de autenticación (UserRegister, UserLogin, Token)
+--- 
+# Reflexión final sobre la importancia de la seguridad en APIs REST
+La seguridad en una API no es un "extra", sino una necesidad fundamental en cualquier aplicación que maneje datos reales. A lo largo de esta actividad, implementé varias capas de protección que convierten device_systems en un sistema robusto y confiable:
+
+**Autenticación y autorización:**
+El uso de OAuth2 con JWT permite que los usuarios se autentiquen de forma segura y que cada petición lleve un token firmado. Los roles (admin, support, user) permiten restringir operaciones según el nivel de permiso, evitando que usuarios no autorizados realicen acciones críticas como eliminar dispositivos.
+
+**Hash de contraseñas:**
+Con Passlib y bcrypt, las contraseñas nunca se almacenan en texto plano. Incluso si la base de datos es comprometida, las contraseñas no son legibles. Esta es una práctica obligatoria en cualquier sistema moderno.
+
+**Middleware personalizado:**
+Agregar cabeceras como X-Request-ID y X-Process-Time facilita la trazabilidad y el monitoreo. Registrar el tiempo de respuesta y el método de cada petición ayuda a detectar cuellos de botella y a depurar errores en producción.
+
+**CORS:**
+Configurar correctamente los orígenes permitidos evita que sitios maliciosos accedan a la API desde el frontend, protegiendo los datos de los usuarios.
+
+**Rate limiting:**
+Limitar el número de peticiones por minuto previene ataques de fuerza bruta y abuso del sistema. Es una barrera simple pero efectiva contra intentos de adivinación de contraseñas y sobrecarga del servidor.
+
+**Validaciones avanzadas con Pydantic v2:**
+Las validaciones de contraseña (mínimo 8 caracteres, mayúscula, minúscula, número, sin espacios) aseguran que los usuarios elijan credenciales seguras desde el registro.
+
+**Conclusión:**
+Una API sin seguridad es una puerta abierta a ataques. Implementar autenticación, autorización, hash, CORS, rate limiting y middleware no solo protege los datos, sino que genera confianza en los usuarios y en los equipos que consumen la API. device_systems pasó de ser un CRUD básico a un sistema preparado para entornos reales, donde la seguridad es el pilar más importante.
