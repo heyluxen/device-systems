@@ -638,6 +638,8 @@ Esta actividad me enseñó a diseñar un sistema con múltiples tablas relaciona
 
 # [Proyecto-Final-v2] GA1-220501096-01-AA1-EV11 – FastAPI Seguridad: Autenticación, Middleware, CORS, Rate Limiting y Validación Avanzada en device_systems
 
+**Link video de Youtube:** https://youtu.be/0FHKPUPGjKg
+
 API REST segura para gestión de usuarios, dispositivos y préstamos con autenticación JWT, middleware, CORS, rate limiting y validaciones avanzadas con Pydantic v2.
 
 ## Tecnologías utilizadas
