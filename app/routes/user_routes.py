@@ -1,95 +1,74 @@
-from fastapi import APIRouter, Depends, Query, status
-from typing import List, Optional
-from app.schemas.user_schema import UserCreate, UserUpdate, UserResponse, RoleEnum
-from app.services.user_service import (
-    get_all_users, create_user, update_user_complete,
-    update_user_partial, delete_user
-)
-from app.dependencies.user_dependencies import get_user_or_404
+from fastapi import APIRouter, Depends, Query, status, Request
+from sqlalchemy.orm import Session
+from typing import Optional, List
+from app.schemas.user_schema import UserCreate, UserUpdate, UserPatch, UserResponse, RoleEnum
+from app.services import user_service
+from app.dependencies.database_dependency import get_db
+from app.dependencies.auth_dependency import get_current_active_user, require_admin, require_support_or_admin
+from app.dependencies.rate_limit_dependency import limiter
+from app.models.user_model import User
 
 router = APIRouter()
 
-@router.get(
-    "/users",
-    response_model=List[UserResponse],
-    status_code=status.HTTP_200_OK,
-    summary="Listar usuarios",
-    description="Obtiene la lista de usuarios. Puede filtrar por rol y estado activo.",
-    response_description="Lista de usuarios"
-)
+@router.get("/users", response_model=List[UserResponse], status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
 def list_users(
+    request: Request,
     role: Optional[RoleEnum] = Query(None),
-    is_active: Optional[bool] = Query(None)
+    is_active: Optional[bool] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    return get_all_users(role, is_active)
+    return user_service.get_users(db, role, is_active)
 
-@router.get(
-    "/users/{user_id}",
-    response_model=UserResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Obtener usuario por ID",
-    description="Retorna un usuario específico según su ID.",
-    response_description="Datos del usuario"
-)
-def get_user(user: dict = Depends(get_user_or_404)):
-    return user
-
-@router.post(
-    "/users",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Crear usuario",
-    description="Crea un nuevo usuario. Valida nombre, email y rol.",
-    response_description="Usuario creado"
-)
-def create_new_user(user_data: UserCreate):
-    return create_user(user_data)
-
-@router.put(
-    "/users/{user_id}",
-    response_model=UserResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Actualizar completamente un usuario",
-    description="Reemplaza todos los datos de un usuario existente.",
-    response_description="Usuario actualizado"
-)
-def update_complete_user(
+@router.get("/users/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("30/minute")
+def get_user(
+    request: Request,
     user_id: int,
-    user_data: UserCreate,
-    user_exist: dict = Depends(get_user_or_404)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    return update_user_complete(user_id, user_data)
+    return user_service.get_user_or_404(db, user_id)
 
-@router.patch(
-    "/users/{user_id}",
-    response_model=UserResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Actualizar parcialmente un usuario",
-    description="Modifica solo los campos enviados en la petición.",
-    response_description="Usuario actualizado"
-)
-def update_partial_user(
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+def create_user(
+    request: Request,
+    user_data: UserCreate,
+    db: Session = Depends(get_db)
+):
+    return user_service.create_user(db, user_data)
+
+@router.put("/users/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("10/minute")
+def update_complete_user(
+    request: Request,
     user_id: int,
     user_data: UserUpdate,
-    user_exist: dict = Depends(get_user_or_404)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_support_or_admin)
 ):
-    # Filtrar solo los campos que fueron enviados (excluir None)
-    update_data = user_data.model_dump(exclude_unset=True)
-    if not update_data:
-        from fastapi import HTTPException, status
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Debe enviar al menos un campo para actualizar"
-        )
-    return update_user_partial(user_id, update_data)
+    return user_service.update_user_complete(db, user_id, user_data)
 
-@router.delete(
-    "/users/{user_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar usuario",
-    description="Elimina un usuario existente. No retorna contenido.",
-    response_description="Usuario eliminado (sin contenido)"
-)
-def delete_user_endpoint(user_exist: dict = Depends(get_user_or_404)):
-    delete_user(user_exist["id"])
+@router.patch("/users/{user_id}", response_model=UserResponse, status_code=status.HTTP_200_OK)
+@limiter.limit("10/minute")
+def update_partial_user(
+    request: Request,
+    user_id: int,
+    user_data: UserPatch,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_support_or_admin)
+):
+    return user_service.update_user_partial(db, user_id, user_data)
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
+def delete_user(
+    request: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    user_service.delete_user(db, user_id)
     return None
