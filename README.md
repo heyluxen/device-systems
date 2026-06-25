@@ -1,7 +1,10 @@
 **Aprendiz:** Valentina Correa Hoyos
 
 **Ficha:** 3144585
-# Device Systems API – FastAPI
+
+# GA1-220501096-01-AA1-EV07 – Fundamentos de FastAPI: API REST para Gestión de Usuarios
+
+**Link video de Youtube:** https://youtu.be/fzrc7cCX3jo
 
 # GA1-220501096-01-AA1-EV07 – Fundamentos de FastAPI: API REST para Gestión de Usuarios
 
